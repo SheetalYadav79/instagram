@@ -20,7 +20,7 @@ function App() {
         <Route path='/signin' element={<SignIn/>}></Route>
         <Route path='/profile' element={<Profile/>}></Route>
       </Routes>
-      <ToastContainer/>
+      <ToastContainer theme='dark'/>
     </div>
     </BrowserRouter>
   );
