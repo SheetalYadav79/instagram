@@ -4,6 +4,9 @@ import "./Profile.css";
 export default function Profile() {
   const [pic, setPic] = useState([]);
 
+  // ✅ Safe parse user data
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
   useEffect(() => {
     fetch("http://localhost:5000/myposts", {
       headers: {
@@ -12,12 +15,11 @@ export default function Profile() {
     })
       .then(res => res.json())
       .then((result) => {
-        console.log(result); // for debugging
-        setPic(result); // make sure `myposts` matches your API response key
+        setPic(result);
       })
-      .catch(err=>{
-          console.log("Fetch error", err);
-      })
+      .catch(err => {
+        console.log("Fetch error", err);
+      });
   }, []);
 
   return (
@@ -33,7 +35,7 @@ export default function Profile() {
         </div>
         {/* profile data */}
         <div className='profile-data'>
-          <h1>Sheetal Yadav</h1>
+          <h1>{user.name || "Guest"}</h1>
           <div className='profile-info' style={{ display: "flex" }}>
             <p>40 posts</p>
             <p>40 followers</p>
