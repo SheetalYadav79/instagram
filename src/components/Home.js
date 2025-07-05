@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import "./Home.css";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-
 
 export default function Home() {
   const navigate = useNavigate();
@@ -11,9 +10,8 @@ export default function Home() {
   const [show, setShow] = useState(false);
   const [item, setItem] = useState(null);
 
-
-  const notifyA = (msg) => toast.error(msg)
-  const notifyB = (msg) => toast.success(msg)
+  const notifyA = (msg) => toast.error(msg);
+  const notifyB = (msg) => toast.success(msg);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -21,15 +19,28 @@ export default function Home() {
     const token = localStorage.getItem("jwt");
     if (!token) {
       navigate("/signup");
+      return;
     }
 
     fetch("http://localhost:5000/allposts", {
       headers: {
         "Authorization": "Bearer " + token
       },
-    }).then(res => res.json())
-      .then(result => setData(result))
-      .catch(err => console.log(err));
+    })
+      .then(res => res.json())
+      .then(result => {
+        if (Array.isArray(result)) {
+          setData(result);
+        } else {
+          console.error("Expected array, got:", result);
+          notifyA(result.error || "Failed to load posts");
+          setData([]);
+        }
+      })
+      .catch(err => {
+        console.error("Fetch error:", err);
+        notifyA("Server error");
+      });
   }, [navigate]);
 
   const toggleComment = (posts) => {
@@ -45,8 +56,9 @@ export default function Home() {
         "Authorization": "Bearer " + localStorage.getItem("jwt")
       },
       body: JSON.stringify({ postId: id })
-    }).then(res => res.json())
-      .then((result) => {
+    })
+      .then(res => res.json())
+      .then(result => {
         const newData = data.map((posts) =>
           posts._id === result._id ? result : posts
         );
@@ -62,8 +74,9 @@ export default function Home() {
         "Authorization": "Bearer " + localStorage.getItem("jwt")
       },
       body: JSON.stringify({ postId: id })
-    }).then(res => res.json())
-      .then((result) => {
+    })
+      .then(res => res.json())
+      .then(result => {
         const newData = data.map((posts) =>
           posts._id === result._id ? result : posts
         );
@@ -72,6 +85,8 @@ export default function Home() {
   };
 
   const makeComment = (text, id) => {
+    if (!text.trim()) return;
+
     fetch("http://localhost:5000/comment", {
       method: "put",
       headers: {
@@ -86,7 +101,7 @@ export default function Home() {
           posts._id === result._id ? result : posts
         );
         setData(newData);
-        notifyB("Comment posted")
+        notifyB("Comment posted");
         setComment('');
       });
   };
@@ -99,7 +114,15 @@ export default function Home() {
             <div className='card-pic'>
               <img src='https://images.unsplash.com/photo-1722495178488-c8056c4ec2c0?w=500' alt='' />
             </div>
-            <h5>{posts.postedBy?.name || "Unknown"}</h5>
+            <h5>
+              {posts.postedBy ? (
+                <Link to={`/profile/${posts.postedBy._id}`}>
+                  {posts.postedBy.name}
+                </Link>
+              ) : (
+                "Unknown"
+              )}
+            </h5>
           </div>
 
           <div className='card-image'>
@@ -119,11 +142,13 @@ export default function Home() {
 
           <div className='add-comment'>
             <span className="material-symbols-outlined">mood</span>
-            <input type='text' placeholder='Add a comment' value={comment} onChange={(e) => setComment(e.target.value)} />
-            <button className='comment' onClick={() => {
-              makeComment(comment, item._id)
-              toggleComment()
-              }}>Post</button>
+            <input
+              type='text'
+              placeholder='Add a comment'
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <button className='comment' onClick={() => makeComment(comment, posts._id)}>Post</button>
           </div>
         </div>
       ))}
@@ -145,7 +170,7 @@ export default function Home() {
               <div className='comment-section' style={{ borderBottom: "1px solid #00000029" }}>
                 {item.comments.map((comment) => (
                   <p className='comm' key={comment._id}>
-                    <span className='commenter' style={{ fontWeight: "bolder" }}>{comment.postedBy?.name || "User"} </span>
+                    <span className='commenter' style={{ fontWeight: "bolder" }}>{comment.postedBy?.name || "User"}</span>
                     <span className='commentText'>{comment.comment}</span>
                   </p>
                 ))}
@@ -158,7 +183,12 @@ export default function Home() {
 
               <div className='add-comment'>
                 <span className="material-symbols-outlined">mood</span>
-                <input type='text' placeholder='Add a comment' value={comment} onChange={(e) => setComment(e.target.value)} />
+                <input
+                  type='text'
+                  placeholder='Add a comment'
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                />
                 <button className='comment' onClick={() => makeComment(comment, item._id)}>Post</button>
               </div>
             </div>
